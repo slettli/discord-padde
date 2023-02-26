@@ -1,9 +1,9 @@
 import os
 
-from dfa.bot import Bot
+from padde.bot import Padde
 
 if __name__ == "__main__":
-    bot = Bot()
+    bot = Padde()
     if os.name != "nt":
         import uvloop
 
