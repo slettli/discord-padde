@@ -64,14 +64,14 @@ class PowerPricesView(miru.View):
             async with session.get(f"https://www.hvakosterstrommen.no/api/v1/prices/{now.year}/{str(now.month).zfill(2)}-{str(now.day).zfill(2)}_{select.values[0]}.json") as r:
                 data = await r.json()
 
-        # Extract the relevant values from the data
+        # Extract relevant values from data
         prices = [d['NOK_per_kWh'] for d in data]
         times = [d['time_start'] for d in data]
 
-        # Convert the times to datetime objects
+        # Convert times to datetime objects
         times = [datetime.fromisoformat(t) for t in times]
 
-        # Create the plot
+        # Create plot
         fig, ax = plt.subplots()
         ax.plot(times, prices)
 
@@ -81,7 +81,7 @@ class PowerPricesView(miru.View):
         ax.xaxis.set_major_locator(locator)
         ax.xaxis.set_major_formatter(formatter)
 
-        # Annotate the highest and lowest points
+        # Annotate highest and lowest points
         min_price = min(prices)
         max_price = max(prices)
         min_time = times[prices.index(min_price)]
@@ -91,13 +91,28 @@ class PowerPricesView(miru.View):
         ax.annotate(f'{int(max_price * 100)} øre/kWh, {max_time.hour}:00', xy=(max_time, max_price),
                     xytext=(max_time + timedelta(hours=-1), max_price + 0.01))
 
-        # Set the axis labels and title
-        ax.set_ylabel('Price (øre/kWh)')
-        ax.set_title(f"Prices for {select.values[0]}, {select.values[0]}, for {now.year}/{str(now.month).zfill(2)}-{str(now.day).zfill(2)}")
+        # Pick text for chosen region
+        match select.values[0]:
+            case "NO1":
+                region = "Oslo / Øst-Norge"
+            case "NO2":
+                region = "Kristiansand / Sør-Norge"
+            case "NO3":
+                region = "Trondheim / Midt-Norge"
+            case "NO4":
+                region = "Tromsø / Nord-Norge"
+            case _:
+                region = "Bergen / Vest-Norge"
 
-        # Show the plot
+        # Set axis labels and title
+        ax.set_ylabel('Price (øre/kWh)')
+        ax.set_title(f"Prices for {region}, {now.year}/{str(now.month).zfill(2)}-{str(now.day).zfill(2)}")
+
+        # Save plot as png
         plt.savefig("padde/data/power_prices.png")
-        await ctx.respond(content=f"Here are prices for {select.values[0]}, {now.year}/{str(now.month).zfill(2)}-{str(now.day).zfill(2)}", attachment=hikari.File('padde/data/power_prices.png'), flags=hikari.MessageFlag.EPHEMERAL)
+
+        # Send plot to user in Discord
+        await ctx.respond(content=f"Here are prices for {region}, {now.year}/{str(now.month).zfill(2)}-{str(now.day).zfill(2)}", attachment=hikari.File('padde/data/power_prices.png'), flags=hikari.MessageFlag.EPHEMERAL)
         plt.clf()
 
 
@@ -115,8 +130,10 @@ async def startup_views(event: hikari.StartedEvent) -> None:
 @lightbulb.implements(lightbulb.SlashCommand)
 async def show_power_prices(ctx: lightbulb.Context) -> None:
     pView = PowerPricesView()
-    aResp = await plugin.bot.rest.create_message(ctx.channel_id, content="Select a region to view today's prices:", components=pView)
+    aResp = await plugin.bot.rest.create_message(ctx.channel_id, content="Select a region to view today's prices.\n"
+                                                                         "Power prices delivered by hvakosterstrommen.no", components=pView)
     await pView.start(aResp)
+    await ctx.respond("Done.", flags=hikari.MessageFlag.EPHEMERAL, delete_after=10)
 
 
 def load(bot):
