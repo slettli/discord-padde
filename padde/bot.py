@@ -15,14 +15,13 @@ class Padde(lightbulb.BotApp):
         super().__init__(token=os.getenv('DISCORD_TOKEN'),
                          intents=hikari.Intents(hikari.Intents.ALL_UNPRIVILEGED | hikari.Intents.MESSAGE_CONTENT | hikari.Intents.GUILDS))
 
-        self.DEVMODE = os.getenv('DEV_MODE')
         self.load_extensions_from("padde/plugins/")  # Load commands
         miru.install(self)
         self.vendor_message = (0, 0)
 
     def schedule_vendor_updates(self, messageID, providerName):
         scheduler = AsyncIOScheduler()
-        scheduler.add_job(self.update_vendor_price, 'interval', args=(messageID, providerName), minutes=1)
+        scheduler.add_job(self.update_vendor_price, 'interval', args=(messageID, providerName), minutes=60)
         scheduler.start()
 
     async def update_vendor_price(self, messageID, provider):
