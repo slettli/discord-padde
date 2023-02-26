@@ -30,5 +30,5 @@ class ConsumptionChart:
     def gen_plot(self):
         self.load_data()
         self.plot_data()
-        self.save_plot('padde/data/power_consumption.png')
+        self.save_plot('padde/data/images/power_consumption.png')
 

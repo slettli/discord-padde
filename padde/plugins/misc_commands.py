@@ -28,7 +28,7 @@ async def say_hi(ctx: lightbulb.Context) -> None:
 async def personal_power(ctx: lightbulb.Context) -> None:
     plotter = ConsumptionChart('padde/data/consumption.json')
     plotter.gen_plot()
-    await ctx.respond(hikari.File('padde/data/power_consumption.png'), flags=hikari.MessageFlag.EPHEMERAL)
+    await ctx.respond(hikari.File('padde/data/images/power_consumption.png'), flags=hikari.MessageFlag.EPHEMERAL)
 
 
 def load(bot):
