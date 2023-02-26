@@ -21,7 +21,7 @@ plugin = Plugin()
 @lightbulb.implements(lightbulb.SlashCommand)
 async def show_providers(ctx: lightbulb.Context) -> None:
     if plugin.bot.vendor_message == (0, 0):  # Create new timestamp and save IDs for later updating
-        messageStamp = await plugin.bot.rest.create_message(ctx.channel_id, f"Prices were last updated at: (<t:{round(datetime.datetime.now().timestamp())}:f>)")
+        messageStamp = await plugin.bot.rest.create_message(ctx.channel_id, f"Offers were last updated at <t:{round(datetime.datetime.now().timestamp())}:f>")
         plugin.bot.vendor_message = (messageStamp.channel_id, messageStamp.id)
         plugin.bot.schedule_vendor_updates(0, "")
 
@@ -44,11 +44,12 @@ async def show_providers(ctx: lightbulb.Context) -> None:
 
         message = await plugin.bot.rest.create_message(ctx.channel_id, providerEmbed)
 
+    await ctx.respond("Done.", flags=hikari.MessageFlag.EPHEMERAL, delete_after=10)
+
 
 async def get_power_providers():
     """
     Retreives live power prices
-    :return:
     """
     with open("padde/data/" + "providers.json", 'r') as f:
         return json.load(f)

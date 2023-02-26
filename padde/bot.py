@@ -28,7 +28,7 @@ class Padde(lightbulb.BotApp):
     async def update_vendor_price(self, messageID, provider):
         # Update timestamp
         editedMessage = await self.rest.fetch_message(self.vendor_message[0], self.vendor_message[1])
-        editedMessage = re.sub(r'\(.*?\)', f"(<t:{round(datetime.datetime.now().timestamp())}:f>)", editedMessage.content)
+        editedMessage = re.sub(r'\<.*?\>', f"<t:{round(datetime.datetime.now().timestamp())}:f>", editedMessage.content)
         await self.rest.edit_message(channel=self.vendor_message[0], message=self.vendor_message[1], content=editedMessage)
         # Update vendor embed with pricing
         # Joke, there's nothing to update and therefore no code for that at the moment :)

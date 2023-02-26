@@ -15,9 +15,35 @@ class Plugin(lightbulb.Plugin):
     def __init__(self) -> None:
         super().__init__("power_providers")
         self.bot: Padde
+        self.power_when = 1
 
 
 plugin = Plugin()
+
+
+class TodayButtonView(miru.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @miru.button(label="Yesterday", style=hikari.ButtonStyle.PRIMARY, custom_id="power_yesterday_button")
+    async def yesterday_button(self, button: miru.Button, ctx: miru.ViewContext) -> None:
+        await ctx.defer()
+        plugin.power_when = 0
+        await ctx.respond("I'll show prices for yesterday. Please reselect a region again.",
+                          flags=hikari.MessageFlag.EPHEMERAL)
+
+    @miru.button(label="Today", style=hikari.ButtonStyle.PRIMARY, custom_id="power_today_button")
+    async def today_button(self, button: miru.Button, ctx: miru.ViewContext) -> None:
+        await ctx.defer()
+        plugin.power_when = 1
+        await ctx.respond("I'll show prices for today. Please reselect a region.", flags=hikari.MessageFlag.EPHEMERAL)
+
+    @miru.button(label="Tomorrow", style=hikari.ButtonStyle.PRIMARY, custom_id="power_tomorrow")
+    async def tomorrow_button(self, button: miru.Button, ctx: miru.ViewContext) -> None:
+        await ctx.defer()
+        plugin.power_when = 2
+        await ctx.respond("I'll show prices for tomorrow. Please reselect a region again.",
+                          flags=hikari.MessageFlag.EPHEMERAL)
 
 
 class PowerPricesView(miru.View):
@@ -60,6 +86,15 @@ class PowerPricesView(miru.View):
         await ctx.defer(flags=hikari.MessageFlag.EPHEMERAL)
 
         now = datetime.now()
+
+        match plugin.power_when:
+            case 0:  # Show prices for yesterday
+                now = now - timedelta(days=1)
+            case 2:  # Show prices for yesterday
+                now = now + timedelta(days=1)
+            case _:
+                pass
+
         async with aiohttp.ClientSession() as session:
             async with session.get(f"https://www.hvakosterstrommen.no/api/v1/prices/{now.year}/{str(now.month).zfill(2)}-{str(now.day).zfill(2)}_{select.values[0]}.json") as r:
                 data = await r.json()
@@ -122,7 +157,9 @@ async def startup_views(event: hikari.StartedEvent) -> None:
     Reinstates previously posted views when bot starts
     """
     pc_view = PowerPricesView()
+    tb_view = TodayButtonView()
     await pc_view.start()
+    await tb_view.start()
 
 
 @plugin.command()
@@ -133,6 +170,16 @@ async def show_power_prices(ctx: lightbulb.Context) -> None:
     aResp = await plugin.bot.rest.create_message(ctx.channel_id, content="Select a region to view today's prices.\n"
                                                                          "Power prices delivered by hvakosterstrommen.no", components=pView)
     await pView.start(aResp)
+    await ctx.respond("Done.", flags=hikari.MessageFlag.EPHEMERAL, delete_after=10)
+
+
+@plugin.command()
+@lightbulb.command("spawn_date_button", "Creates buttons to select yesterday/today/tomrorow for power prices", guilds=[1079395362869100584])
+@lightbulb.implements(lightbulb.SlashCommand)
+async def spawn_date_button(ctx: lightbulb.Context) -> None:
+    tView = TodayButtonView()
+    tResp = await plugin.bot.rest.create_message(ctx.channel_id, components=tView)
+    await tView.start(tResp)
     await ctx.respond("Done.", flags=hikari.MessageFlag.EPHEMERAL, delete_after=10)
 
 
