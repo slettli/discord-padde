@@ -8,6 +8,7 @@ import miru
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from dotenv import load_dotenv
 
+
 class Padde(lightbulb.BotApp):
     def __init__(self) -> None:
         load_dotenv()
