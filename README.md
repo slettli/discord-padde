@@ -13,12 +13,6 @@ Small Discord-bot for future of fintech spring 2023
 ## Comments
 The idea behind this bot is to have convenient access to info about electricity. Features that should be added are a way to authenticate with your provider, so that the bot can track power usage. It could then monitor prices from different providers and ping you through Discord whenever you should switch providers.
 
-It also needs a system for caching power prices, for the sake of hvakosterstrommen.no. 
-  * This applies to the power chart it generates as well.
-
-I was short on time though, so this is what I pulled together.
-
-
 ## How to run
 Sorry, no docker or auto-setup proivded. Instead of doing all this, you can check it out in the Discord server provided over email.
 
