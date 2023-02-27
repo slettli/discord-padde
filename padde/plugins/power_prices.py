@@ -1,3 +1,4 @@
+import os
 import datetime
 import aiohttp
 import hikari
@@ -59,14 +60,35 @@ class PowerPricesView(miru.View):
         Fetches today's power prices for selected region, generates and posts a plot.
         """
         await ctx.defer(flags=hikari.MessageFlag.EPHEMERAL)
-
-        region = await self.create_graph(select.values[0], 1, ctx.message.id)
-
-        # Send plot to user in Discord
-        await ctx.respond(content=f"Today's prices for {region}:", attachment=hikari.File(f'padde/data/images/{ctx.message.id}.png'), flags=hikari.MessageFlag.EPHEMERAL)
         plugin.last_region = select.values[0]
 
-    async def create_graph(self, regionCode, when, id):
+    async def create_chartid(self, regionCode, when):
+        now = datetime.now()
+
+        match when:
+            case 0:  # Show prices for yesterday
+                now = now - timedelta(days=1)
+            case 2:  # Show prices for yesterday
+                now = now + timedelta(days=1)
+            case _:
+                pass
+
+        # Pick text for chosen region
+        match regionCode:
+            case "NO1":
+                region = "Oslo / Øst-Norge"
+            case "NO2":
+                region = "Kristiansand / Sør-Norge"
+            case "NO3":
+                region = "Trondheim / Midt-Norge"
+            case "NO4":
+                region = "Tromsø / Nord-Norge"
+            case _:
+                region = "Bergen / Vest-Norge"
+
+        return f"{regionCode}-{now.year}-{str(now.month).zfill(2)}-{str(now.day).zfill(2)}"
+
+    async def create_graph(self, regionCode, when):
 
         now = datetime.now()
 
@@ -77,6 +99,24 @@ class PowerPricesView(miru.View):
                 now = now + timedelta(days=1)
             case _:
                 pass
+
+        # Pick text for chosen region
+        match regionCode:
+            case "NO1":
+                region = "Oslo / Øst-Norge"
+            case "NO2":
+                region = "Kristiansand / Sør-Norge"
+            case "NO3":
+                region = "Trondheim / Midt-Norge"
+            case "NO4":
+                region = "Tromsø / Nord-Norge"
+            case _:
+                region = "Bergen / Vest-Norge"
+
+        chartid = f"{regionCode}-{now.year}-{str(now.month).zfill(2)}-{str(now.day).zfill(2)}"
+
+        if os.path.isfile(f"padde/data/images/{chartid}.png"):  # Check if file already exists (chart has been made)
+            return
 
         async with aiohttp.ClientSession() as session:
             async with session.get(f"https://www.hvakosterstrommen.no/api/v1/prices/{now.year}/{str(now.month).zfill(2)}-{str(now.day).zfill(2)}_{regionCode}.json") as r:
@@ -109,25 +149,13 @@ class PowerPricesView(miru.View):
         ax.annotate(f'{int(max_price * 100)} øre/kWh, {max_time.hour}:00', xy=(max_time, max_price),
                     xytext=(max_time + timedelta(hours=-1), max_price + 0.01))
 
-        # Pick text for chosen region
-        match regionCode:
-            case "NO1":
-                region = "Oslo / Øst-Norge"
-            case "NO2":
-                region = "Kristiansand / Sør-Norge"
-            case "NO3":
-                region = "Trondheim / Midt-Norge"
-            case "NO4":
-                region = "Tromsø / Nord-Norge"
-            case _:
-                region = "Bergen / Vest-Norge"
 
         # Set axis labels and title
         ax.set_ylabel('Price (øre/kWh)')
         ax.set_title(f"Prices for {region}, {now.year}/{str(now.month).zfill(2)}-{str(now.day).zfill(2)}")
 
         # Save plot as png
-        plt.savefig(f'padde/data/images/{id}.png')
+        plt.savefig(f'padde/data/images/{chartid}.png')
         plt.clf()
 
         return region
@@ -135,20 +163,23 @@ class PowerPricesView(miru.View):
     @miru.button(label="Yesterday", style=hikari.ButtonStyle.PRIMARY, custom_id="power_yesterday_button")
     async def yesterday_button(self, button: miru.Button, ctx: miru.ViewContext) -> None:
         await ctx.defer()
-        region = await self.create_graph(plugin.last_region, 0, ctx.message.id)
-        await ctx.respond(content=f"Yesterday's prices for {region}:", attachment=hikari.File(f'padde/data/images/{ctx.message.id}.png'), flags=hikari.MessageFlag.EPHEMERAL)
+        chartid = await self.create_chartid(plugin.last_region, 0)
+        region = await self.create_graph(plugin.last_region, 0)
+        await ctx.respond(content=f"Yesterday's prices for {region}:", attachment=hikari.File(f'padde/data/images/{chartid}.png'), flags=hikari.MessageFlag.EPHEMERAL)
 
     @miru.button(label="Today", style=hikari.ButtonStyle.PRIMARY, custom_id="power_today_button")
     async def today_button(self, button: miru.Button, ctx: miru.ViewContext) -> None:
         await ctx.defer()
-        region = await self.create_graph(plugin.last_region, 1, ctx.message.id)
-        await ctx.respond(content=f"Today's prices for {region}:", attachment=hikari.File(f'padde/data/images/{ctx.message.id}.png'), flags=hikari.MessageFlag.EPHEMERAL)
+        chartid = await self.create_chartid(plugin.last_region, 1)
+        region = await self.create_graph(plugin.last_region, 1)
+        await ctx.respond(content=f"Today's prices for {region}:", attachment=hikari.File(f'padde/data/images/{chartid}.png'), flags=hikari.MessageFlag.EPHEMERAL)
 
     @miru.button(label="Tomorrow", style=hikari.ButtonStyle.PRIMARY, custom_id="power_tomorrow")
     async def tomorrow_button(self, button: miru.Button, ctx: miru.ViewContext) -> None:
         await ctx.defer()
-        region = await self.create_graph(plugin.last_region, 2, ctx.message.id)
-        await ctx.respond(content=f"Tomorrow's prices for {region}:", attachment=hikari.File(f'padde/data/images/{ctx.message.id}.png'), flags=hikari.MessageFlag.EPHEMERAL)
+        chartid = await self.create_chartid(plugin.last_region, 2)
+        region = await self.create_graph(plugin.last_region, 2)
+        await ctx.respond(content=f"Tomorrow's prices for {region}:", attachment=hikari.File(f'padde/data/images/{chartid}.png'), flags=hikari.MessageFlag.EPHEMERAL)
 
 
 @plugin.listener(hikari.StartedEvent)
