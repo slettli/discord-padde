@@ -116,7 +116,7 @@ class PowerPricesView(miru.View):
         chartid = f"{regionCode}-{now.year}-{str(now.month).zfill(2)}-{str(now.day).zfill(2)}"
 
         if os.path.isfile(f"padde/data/images/{chartid}.png"):  # Check if file already exists (chart has been made)
-            return
+            return region
 
         async with aiohttp.ClientSession() as session:
             async with session.get(f"https://www.hvakosterstrommen.no/api/v1/prices/{now.year}/{str(now.month).zfill(2)}-{str(now.day).zfill(2)}_{regionCode}.json") as r:
